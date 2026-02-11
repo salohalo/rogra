@@ -1,0 +1,119 @@
+<!-- core/templates/core/edit_profile.html -->
+{% extends 'core/base.html' %}
+
+{% block title %}Редактировать профиль — SchoolReddit{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-gear"></i> Редактировать профиль
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <!-- Аватар -->
+                        <div class="col-md-4 text-center mb-4">
+                            <div class="mb-3">
+                                {% if user.profile.avatar %}
+                                    <img src="{{ user.profile.avatar.url }}" alt="Аватар" class="profile-avatar mb-3">
+                                {% else %}
+                                    <div class="profile-avatar bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3">
+                                        <i class="bi bi-person text-white" style="font-size: 3rem;"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_avatar" class="form-label">Аватар</label>
+                                {{ form.avatar }}
+                            </div>
+                            <small class="text-muted">Рекомендуемый размер: 200x200px</small>
+                        </div>
+
+                        <!-- Основная информация -->
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="id_username" class="form-label">Имя пользователя</label>
+                                <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                                <small class="text-muted">Имя пользователя нельзя изменить</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="id_email" class="form-label">Email</label>
+                                <input type="email" class="form-control" value="{{ user.email }}" disabled>
+                                <small class="text-muted">Email нельзя изменить</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="id_bio" class="form-label">О себе</label>
+                                {{ form.bio }}
+                                <div class="form-text">Расскажите о себе, своих интересах</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Безопасность -->
+                    <h5 class="mb-3">
+                        <i class="bi bi-shield-check"></i> Безопасность
+                    </h5>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Для изменения пароля перейдите в <a href="#" class="alert-link">настройки безопасности</a>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'profile' user.username %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Сохранить изменения
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Дополнительные настройки -->
+        <div class="card mt-3">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">Дополнительные настройки</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-bell"></i> Уведомления
+                        </div>
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-lock"></i> Конфиденциальность
+                        </div>
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-palette"></i> Внешний вид
+                        </div>
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action text-danger d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-trash"></i> Удалить аккаунт
+                        </div>
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

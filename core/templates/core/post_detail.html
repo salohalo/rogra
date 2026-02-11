@@ -1,0 +1,248 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ post.title }} — Rogra{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Основной пост -->
+    <div class="col-lg-8 mx-auto">
+        <!-- Навигация назад -->
+        <div class="mb-3">
+            <a href="{% url 'home' %}" class="text-decoration-none">
+                <i class="bi bi-arrow-left"></i> Назад к постам
+            </a>
+        </div>
+
+        <!-- Карточка поста -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <!-- Блок голосования -->
+                    <div class="col-auto">
+                        <div class="vote-buttons">
+                            <button class="btn btn-link p-0 vote-up {% if post.user_vote == 'up' %}active{% endif %}"
+                                    onclick="votePost({{ post.id }}, 'up')"
+                                    id="vote-up-{{ post.id }}">
+                                <i class="bi bi-arrow-up-circle fs-4"></i>
+                            </button>
+                            <div class="vote-count {% if post.total_votes > 0 %}text-success{% elif post.total_votes < 0 %}text-danger{% endif %}"
+                                 id="vote-count-{{ post.id }}">
+                                {{ post.total_votes }}
+                            </div>
+                            <button class="btn btn-link p-0 vote-down {% if post.user_vote == 'down' %}active{% endif %}"
+                                    onclick="votePost({{ post.id }}, 'down')"
+                                    id="vote-down-{{ post.id }}">
+                                <i class="bi bi-arrow-down-circle fs-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Контент поста -->
+                    <div class="col">
+                        <div class="mb-2">
+                            <span class="post-tag tag-{{ post.post_type }}">
+                                {% if post.post_type == 'text' %}
+                                    <i class="bi bi-text-paragraph"></i> Текст
+                                {% elif post.post_type == 'image' %}
+                                    <i class="bi bi-image"></i> Изображение
+                                {% endif %}
+                            </span>
+                            <small class="text-muted">
+                                <i class="bi bi-clock"></i> {{ post.created_at|date:"d.m.Y H:i" }}
+                            </small>
+                        </div>
+
+                        <h1 class="card-title mb-3">{{ post.title }}</h1>
+
+                        {% if post.tags.all %}
+                        <div class="mb-3">
+                            {% for tag in post.tags.all %}
+                                <span class="badge bg-{{ tag.color }} me-1 mb-1">{{ tag.name }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Автор -->
+                        <div class="d-flex align-items-center mb-4">
+                            {% if post.author.profile.avatar %}
+                                <img src="{{ post.author.profile.avatar.url }}" alt="Аватар" class="post-avatar me-2">
+                            {% else %}
+                                <div class="post-avatar bg-secondary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                    <i class="bi bi-person text-white"></i>
+                                </div>
+                            {% endif %}
+                            <div>
+                                <small class="fw-semibold">
+                                    <a href="{% url 'profile' post.author.username %}" class="text-decoration-none">
+                                        {{ post.author.username }}
+                                    </a>
+                                </small>
+                                <br>
+                                <small class="text-muted">@{{ post.author.username }}</small>
+                            </div>
+                        </div>
+
+                        <!-- Содержание поста -->
+                        {% if post.post_type == 'text' %}
+                            <div class="card-text mb-4">
+                                {{ post.content|linebreaks }}
+                            </div>
+                        {% elif post.post_type == 'image' and post.image %}
+                            <div class="mb-4">
+                                <img src="{{ post.image.url }}" alt="{{ post.title }}" class="img-fluid rounded mb-3">
+                                <div class="card-text">
+                                    {{ post.content|linebreaks }}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Статистика поста -->
+                        <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                            <div class="text-muted small">
+                                <i class="bi bi-arrow-up"></i> {{ post.get_upvotes_count }}
+                                <i class="bi bi-arrow-down ms-2"></i> {{ post.get_downvotes_count }}
+                                <i class="bi bi-chat ms-2"></i> {{ comments.count }} комментариев
+                            </div>
+                            <div>
+                                <button class="btn btn-outline-secondary btn-sm me-2">
+                                    <i class="bi bi-share"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-bookmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Форма для добавления комментария -->
+        {% if user.is_authenticated %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Добавить комментарий</h5>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ form.text }}
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send"></i> Отправить
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <p class="mb-2">Чтобы оставить комментарий, нужно войти в систему</p>
+                <a href="{% url 'login' %}" class="btn btn-primary me-2">Войти</a>
+                <a href="{% url 'register' %}" class="btn btn-outline-primary">Зарегистрироваться</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Список комментариев -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title mb-4">
+                    Комментарии ({{ comments.count }})
+                </h5>
+
+                {% if comments %}
+                    {% for comment in comments %}
+                    <div class="comment mb-4 {% if not forloop.last %}border-bottom pb-4{% endif %}">
+                        <div class="d-flex">
+                            <!-- Аватар автора комментария -->
+                            <div class="flex-shrink-0">
+                                {% if comment.author.profile.avatar %}
+                                    <img src="{{ comment.author.profile.avatar.url }}" alt="Аватар" class="post-avatar">
+                                {% else %}
+                                    <div class="post-avatar bg-secondary rounded-circle d-flex align-items-center justify-content-center">
+                                        <i class="bi bi-person text-white"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Содержание комментария -->
+                            <div class="flex-grow-1 ms-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-0">
+                                            <a href="{% url 'profile' comment.author.username %}" class="text-decoration-none">
+                                                {{ comment.author.username }}
+                                            </a>
+                                        </h6>
+                                        <small class="text-muted">
+                                            {{ comment.created_at|date:"d.m.Y H:i" }}
+                                        </small>
+                                    </div>
+                                    {% if user == comment.author or user.is_staff %}
+                                    <div class="dropdown">
+                                        <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            {% if user == comment.author %}
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'edit_comment' comment.id %}">
+                                                    <i class="bi bi-pencil"></i> Редактировать
+                                                </a>
+                                            </li>
+                                            {% endif %}
+                                            {% endif %}
+                                            <li>
+                                                <a class="dropdown-item text-danger"
+                                                    href="{% url 'delete_comment' comment.id %}"
+                                                    onclick="return confirm('Вы уверены, что хотите удалить этот комментарий?');">
+                                                        <i class="bi bi-trash"></i> Удалить
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="mt-2">
+                                    {{ comment.text|linebreaks }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-chat fs-1 text-muted mb-3"></i>
+                        <p class="text-muted">Пока нет комментариев. Будьте первым!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .comment {
+        transition: background-color 0.2s;
+    }
+
+    .comment:hover {
+        background-color: rgba(0,0,0,0.02);
+        border-radius: 8px;
+        padding: 8px;
+        margin: -8px;
+    }
+
+    .tag-text {
+        background-color: #e3f2fd;
+        color: #1565c0;
+    }
+
+    .tag-image {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+    }
+</style>
+{% endblock %}
