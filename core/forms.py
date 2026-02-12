@@ -32,7 +32,7 @@ class RegisterForm(UserCreationForm):
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['bio', 'avatar']
+        fields = ['bio', 'avatar', 'profile_audio']
         widgets = {
             'bio': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -41,6 +41,10 @@ class ProfileUpdateForm(forms.ModelForm):
             }),
             'avatar': forms.FileInput(attrs={
                 'class': 'form-control'
+            }),
+            'profile_audio': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'audio/*'
             })
         }
 
