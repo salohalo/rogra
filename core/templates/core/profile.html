@@ -85,6 +85,19 @@
                 </p>
             </div>
         </div>
+        {% if profile.profile_audio %}
+                <div class="card mt-3">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-music-note-beamed"></i> Музыка</h5>
+                        <audio id="profileAudio" src="{{ profile.profile_audio.url }}" preload="auto"></audio>
+                        <div class="d-grid">
+                            <button id="audioControl" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-play-fill"></i> Включить звук
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
     </div>
 
     <!-- Основной контент профиля -->
@@ -209,4 +222,32 @@
         </div>
     </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const audio = document.getElementById('profileAudio');
+        const btn = document.getElementById('audioControl');
+
+        if (!audio) return;
+
+        btn.addEventListener('click', function() {
+            if (audio.paused) {
+                audio.play();
+                btn.innerHTML = '<i class="bi bi-pause-fill"></i> Пауза';
+            } else {
+                audio.pause();
+                btn.innerHTML = '<i class="bi bi-play-fill"></i> Включить звук';
+            }
+        });
+
+        // Попытка автовоспроизведения
+        audio.play().catch(() => {
+            console.log("Not Working");
+        });
+        audio.onplay = function(){
+            btn.innerHTML = '<i class="bi bi-pause-fill"></i> Пауза';
+        }
+    });
+</script>
 {% endblock %}

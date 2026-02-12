@@ -54,6 +54,21 @@
                                 {{ form.bio }}
                                 <div class="form-text">Расскажите о себе, своих интересах</div>
                             </div>
+                            <div class="mb-3">
+                                <label for="id_profile_audio" class="form-label">Музыка профиля (MP3)</label>
+                                {{ form.profile_audio }}
+                                <div class="form-text">Выберите аудиофайл, который будет играть в вашем профиле.</div>
+
+                                {% if user.profile.profile_audio %}
+                                    <div class="mt-2 small text-muted">
+                                        Текущий файл: {{ user.profile.profile_audio.name }}
+                                    </div>
+                                {% endif %}
+
+                                {% if form.profile_audio.errors %}
+                                    <div class="text-danger small">{{ form.profile_audio.errors }}</div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
 
@@ -116,4 +131,29 @@
         </div>
     </div>
 </div>
+{% endblock %}
+{% block extra_js  %}
+<script>
+document.getElementById('id_profile_audio').onchange = function() {
+    const file = this.files[0];
+    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
+
+    // Проверка размера
+    if (file.size > maxSizeBytes) {
+        alert("Файл слишком большой!");
+        this.value = ""; // Сбросить выбор
+        return;
+    }
+
+    // Проверка длительности
+    const audio = document.createElement('audio');
+    audio.src = URL.createObjectURL(file);
+    audio.onloadedmetadata = function() {
+        if (audio.duration > 30) {
+            alert("Максимальная длина аудио — 30 секунд!");
+            document.getElementById('id_profile_audio').value = "";
+        }
+    };
+};
+</script>
 {% endblock %}
