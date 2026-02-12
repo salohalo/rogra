@@ -132,3 +132,28 @@
     </div>
 </div>
 {% endblock %}
+{% block extra_js  %}
+<script>
+document.getElementById('id_profile_audio').onchange = function() {
+    const file = this.files[0];
+    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
+
+    // Проверка размера
+    if (file.size > maxSizeBytes) {
+        alert("Файл слишком большой!");
+        this.value = ""; // Сбросить выбор
+        return;
+    }
+
+    // Проверка длительности
+    const audio = document.createElement('audio');
+    audio.src = URL.createObjectURL(file);
+    audio.onloadedmetadata = function() {
+        if (audio.duration > 30) {
+            alert("Максимальная длина аудио — 30 секунд!");
+            document.getElementById('id_profile_audio').value = "";
+        }
+    };
+};
+</script>
+{% endblock %}
