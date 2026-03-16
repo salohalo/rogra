@@ -99,6 +99,8 @@
                                     <i class="bi bi-text-paragraph"></i> Текст
                                 {% elif post.post_type == 'image' %}
                                     <i class="bi bi-image"></i> Изображение
+                                {% elif post.post_type == 'poll' %}
+                                    <i class="bi bi-image"></i> Опрос
                                 {% endif %}
                             </span>
                             <small class="text-muted">
@@ -125,6 +127,44 @@
                         {% elif post.post_type == 'image' and post.image %}
                             <img src="{{ post.image.url }}" alt="{{ post.title }}" class="img-fluid rounded mb-2" style="max-height: 400px;">
                             <p class="card-text">{{ post.content }}</p>
+                        {% elif post.post_type == 'poll' %}
+                            <div class="poll-widget mt-3 mb-3" id="poll-container-{{ post.id }}">
+
+                                {# Форма для группировки радиокнопок #}
+                                <form class="poll-vote-form">
+                                    {% for option in post.poll_options.all %}
+                                    <div class="poll-option-wrapper position-relative">
+
+                                        {# Скрытая радиокнопка. Важно: уникальный ID и общее ИМЯ для группы #}
+                                        <input type="radio"
+                                               name="poll_choice_{{ post.id }}"
+                                               value="{{ option.id }}"
+                                               id="option_{{ option.id }}"
+                                               class="poll-option-input"
+                                               {% if option.id in user_poll_votes %}checked{% endif %}
+                                               onchange="castPollVote({{ post.id }}, {{ option.id }})">
+
+                                        {# Стилизованный label, который выглядит как кнопка с кружком #}
+                                        <label for="option_{{ option.id }}" class="poll-option-label">
+
+                                            {# Фоновый слой прогресс-бара #}
+                                            <div class="poll-progress-bg" id="bar-{{ option.id }}" style="width: {{ option.get_percentage }}%;"></div>
+
+                                            {# Основной контент варианта #}
+                                            <div class="poll-content small fw-bold text-dark">
+                                                <span>{{ option.text }}</span>
+                                                <span class="text-muted poll-perc" id="perc-{{ option.id }}">{{ option.get_percentage }}%</span>
+                                            </div>
+
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </form>
+
+                                <div class="text-muted small mt-2 border-top pt-2">
+                                    <i class="bi bi-people"></i> Всего голосов: <span id="total-votes-{{ post.id }}">{{ post.poll_votes.count }}</span>
+                                </div>
+                            </div>
                         {% endif %}
 
                         <!-- Автор и действия -->

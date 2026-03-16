@@ -30,6 +30,7 @@ class Post(models.Model):
     POST_TYPES = [
         ('text', 'Текст'),
         ('image', 'Изображение'),
+        ('poll','Опрос'),
     ]
 
     author = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -100,3 +101,34 @@ class PostVote(models.Model):
     def __str__(self):
         return f'{self.user.username} - {self.vote_type} - {self.post.title}'
 
+class PollOption(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='poll_options')
+    text = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.text
+
+    @property
+    def total_votes(self):
+        return self.votes.count()
+
+    def get_percentage(self):
+        all_votes = self.post.poll_votes.count()
+        if all_votes == 0:
+            return 0
+        # Математика в LaTeX: $$ \frac{votes}{total} \times 100 $$
+        return int((self.total_votes / all_votes) * 100)
+
+    def user_voted(self, user):
+        if user.is_authenticated:
+            # Проверяем наличие записи в PollVote для этого юзера и этой опции
+            return self.votes.filter(user=user).exists()
+        return False
+
+class PollVote(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='poll_votes')
+    option = models.ForeignKey(PollOption, on_delete=models.CASCADE, related_name='votes')
+
+    class Meta:
+        unique_together = ['user', 'post'] # Один юзер — один голос

@@ -5,94 +5,121 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card">
+        <div class="card shadow-sm">
             <div class="card-header bg-white">
-                <h4 class="mb-0">
-                    <i class="bi bi-plus-circle"></i> Создать новый пост
-                </h4>
+                <h4 class="mb-0"><i class="bi bi-plus-circle"></i> Новый пост</h4>
             </div>
             <div class="card-body">
-                <form method="post" enctype="multipart/form-data">
+                <form method="post" enctype="multipart/form-data" id="post-main-form">
                     {% csrf_token %}
 
-                    <!-- Тип поста -->
                     <div class="mb-3">
-                        <label class="form-label">Тип поста</label>
+                        <label class="form-label fw-bold">Тип поста</label>
                         {{ form.post_type }}
                     </div>
 
-                    <!-- Заголовок -->
                     <div class="mb-3">
-                        <label for="id_title" class="form-label">Заголовок</label>
+                        <label class="form-label fw-bold">Заголовок</label>
                         {{ form.title }}
                     </div>
 
-                    <!-- Контент -->
                     <div class="mb-3">
-                        <label for="id_content" class="form-label">Содержание</label>
+                        <label class="form-label fw-bold">Содержание (текст поста)</label>
                         {{ form.content }}
                     </div>
 
-                    <!-- Изображение -->
-                    <div class="mb-3">
-                        <label for="id_image" class="form-label">Изображение</label>
+                    <div class="mb-3" id="image-field-wrapper" style="display: none;">
+                        <label class="form-label fw-bold text-primary">Прикрепить изображение</label>
                         {{ form.image }}
-                        <div class="form-text">Максимальный размер: 5MB</div>
                     </div>
 
-                    <!-- Теги -->
-                    <div class="mb-4">
-                        <label class="form-label mb-3">
-                            <i class="bi bi-tags"></i> Выберите теги:
-                        </label>
+                    <div id="poll-options-wrapper" class="p-3 mb-3 border rounded bg-light" style="display: none; border: 2px dashed #0d6efd !important;">
+                        <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-card-checklist"></i> Варианты опроса</h6>
+                        <div id="poll-inputs-list">
+                            <input type="text" name="poll_options" class="form-control mb-2" placeholder="Вариант 1">
+                            <input type="text" name="poll_options" class="form-control mb-2" placeholder="Вариант 2">
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="add-option-btn">
+                            <i class="bi bi-plus-lg"></i> Добавить вариант
+                        </button>
+                    </div>
 
-                        <div class="d-flex flex-wrap gap-2 p-3 border rounded bg-light" id="tags-container">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Теги</label>
+                        <div id="tags-container" class="border rounded p-2 bg-light">
                             {% for tag in all_tags %}
-                                <div class="form-check d-inline-block m-0">
-                                    <input type="checkbox"
-                                           name="tags"
-                                           value="{{ tag.id }}"
-                                           id="tag_{{ tag.id }}"
-                                           class="form-check-input tag-checkbox d-none"
-                                           {% if tag.id in form.tags.value %}checked{% endif %}>
-                                    <label for="tag_{{ tag.id }}"
-                                           class="badge bg-{{ tag.color }} p-2 m-0 tag-label"
-                                           style="cursor: pointer; transition: all 0.2s;">
+                                <div class="tag-select-item" style="display: inline-block;">
+                                    <input type="checkbox" name="tags" value="{{ tag.id }}" id="tag_{{ tag.id }}" class="btn-check">
+                                    <label class="btn btn-outline-{{ tag.color }} btn-sm m-1" for="tag_{{ tag.id }}">
                                         {{ tag.name }}
                                     </label>
                                 </div>
                             {% endfor %}
                         </div>
-
-    <div class="form-text mt-2">
-        Кликайте по тегам для выбора. Выбрано: <span id="tag-counter">0</span>
-    </div>
-</div>
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{% url 'home' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left"></i> Отмена
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-send"></i> Опубликовать
-                        </button>
                     </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Опубликовать пост</button>
                 </form>
             </div>
         </div>
-
-        <!-- Правила публикации -->
-        <div class="card mt-3">
-            <div class="card-body">
-                <h6><i class="bi bi-info-circle"></i> Правила публикации</h6>
-                <ul class="small mb-0">
-                    <li>Будьте вежливы и уважительны к другим пользователям</li>
-                    <li>Не публикуйте контент, нарушающий законодательство</li>
-                    <li>Запрещены оскорбления, угрозы и дискриминация</li>
-                </ul>
-            </div>
-        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Ищем элементы по ID
+    const typeSelect = document.querySelector('#id_post_type');
+    const imageWrapper = document.getElementById('image-field-wrapper');
+    const pollWrapper = document.getElementById('poll-options-wrapper');
+    const inputsList = document.getElementById('poll-inputs-list');
+    const addBtn = document.getElementById('add-option-btn');
+
+    // Проверка наличия элементов (для отладки)
+    if (!pollWrapper) {
+        console.error("ОШИБКА: Блок 'poll-options-wrapper' не найден в HTML!");
+        return;
+    }
+
+    // 2. Функция управления видимостью
+    function toggleFields() {
+        const selectedType = typeSelect.value;
+        console.log("Текущий тип:", selectedType);
+
+        // Скрываем всё
+        imageWrapper.style.display = 'none';
+        pollWrapper.style.display = 'none';
+
+        // Показываем нужное
+        if (selectedType === 'image') {
+            imageWrapper.style.display = 'block';
+        } else if (selectedType === 'poll') {
+            pollWrapper.style.display = 'block';
+        }
+    }
+
+    // 3. Слушатель изменений
+    typeSelect.addEventListener('change', toggleFields);
+    
+    // Запускаем проверку сразу при загрузке
+    toggleFields();
+
+    // 4. Логика кнопки добавления вариантов
+    addBtn.addEventListener('click', function() {
+        const count = inputsList.querySelectorAll('input').length + 1;
+        if (count > 10) return alert("Максимум 10 вариантов");
+
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2';
+        div.innerHTML = `
+            <input type="text" name="poll_options" class="form-control" placeholder="Вариант ${count}">
+            <button class="btn btn-outline-danger" type="button" onclick="this.parentElement.remove()">×</button>
+        `;
+        inputsList.appendChild(div);
+    });
+});
+</script>
 {% endblock %}
 {% block extra_css %}
 <style>
@@ -158,43 +185,4 @@
         background: #212529;
     }
 </style>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tagContainer = document.getElementById('tags-container');
-    const tagCounter = document.getElementById('tag-counter');
-
-    // Функция обновления счетчика
-    function updateTagCounter() {
-        const checkedCount = document.querySelectorAll('.tag-checkbox:checked').length;
-        tagCounter.textContent = checkedCount;
-    }
-
-    // Обработчик клика по тегам
-    tagContainer.addEventListener('click', function(e) {
-        if (e.target.classList.contains('tag-label')) {
-            // Чекбокс переключится автоматически благодаря for="tag_id"
-            // Просто обновляем счетчик
-            setTimeout(updateTagCounter, 10); // Небольшая задержка для гарантии
-        }
-    });
-
-    // Инициализация счетчика
-    updateTagCounter();
-
-    // Переключение поля изображения
-    const postTypeSelect = document.querySelector('#id_post_type');
-    const imageField = document.querySelector('#id_image').closest('.mb-3');
-
-    function toggleImageField() {
-        if (postTypeSelect.value === 'image') {
-            imageField.style.display = 'block';
-        } else {
-            imageField.style.display = 'none';
-        }
-    }
-
-    toggleImageField();
-    postTypeSelect.addEventListener('change', toggleImageField);
-});
-</script>
 {% endblock %}

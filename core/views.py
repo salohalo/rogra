@@ -6,7 +6,7 @@ from .forms import RegisterForm, ProfileUpdateForm, PostForm
 from .models import Post, Profile, User, Comment
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from .models import PostVote, Tag
+from .models import PostVote, Tag, PollOption, PollVote
 from django.db import models
 from .forms import RegisterForm, ProfileUpdateForm, PostForm, CommentForm
 
@@ -88,46 +88,116 @@ def logout_view(request):
 
 
 def home_view(request):
-    # Получаем тип сортировки из GET параметра
     sort_by = request.GET.get('sort', 'new')
-
-    # Базовый QuerySet
     posts = Post.objects.all()
 
-    # Применяем сортировку в зависимости от выбора
     if sort_by == 'popular':
-        # Сначала самые популярные (по разнице лайков-дизлайков)
         posts = posts.annotate(
             vote_difference=models.F('upvotes') - models.F('downvotes')
         ).order_by('-vote_difference', '-created_at')
     elif sort_by == 'discussed':
-        # Сначала самые обсуждаемые (по количеству комментариев)
         posts = posts.annotate(
             comment_count=models.Count('comments')
         ).order_by('-comment_count', '-created_at')
-    else:  # 'new' по умолчанию
+    else:
         posts = posts.order_by('-created_at')
 
-    # Добавляем информацию о голосах пользователя для каждого поста
+    # Собираем все голоса пользователя в опросах (список ID выбранных вариантов)
+    user_poll_votes = []
+    if request.user.is_authenticated:
+        user_poll_votes = list(PollVote.objects.filter(user=request.user).values_list('option_id', flat=True))
+
     for post in posts:
         if request.user.is_authenticated:
             post.user_vote = post.user_vote(request.user)
         else:
             post.user_vote = None
 
-        # Используем методы для подсчета голосов
         post.get_upvotes_count = post.get_upvotes_count()
         post.get_downvotes_count = post.get_downvotes_count()
 
     popular_tags = Tag.objects.annotate(post_count=models.Count('posts')).order_by('-post_count')[:10]
-    # Передаем текущий тип сортировки в шаблон
+
     context = {
         'posts': posts,
         'current_sort': sort_by,
-        'popular_tags': popular_tags,  # Добавляем теги
+        'popular_tags': popular_tags,
+        'user_poll_votes': user_poll_votes,  # <--- Передаем в контекст
     }
 
     return render(request, 'core/home.html', context)
+
+
+def post_detail_view(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    comments = post.comments.all().order_by('created_at')
+
+    # Собираем голос пользователя для конкретного опроса
+    user_poll_votes = []
+    if request.user.is_authenticated:
+        post.user_vote = post.user_vote(request.user)
+        user_poll_votes = list(
+            PollVote.objects.filter(user=request.user, post=post).values_list('option_id', flat=True))
+    else:
+        post.user_vote = None
+
+    post.get_upvotes_count = post.get_upvotes_count()
+    post.get_downvotes_count = post.get_downvotes_count()
+
+    for comment in comments:
+        comment.can_edit = comment.can_edit(request.user) if request.user.is_authenticated else False
+
+    if request.method == 'POST' and request.user.is_authenticated:
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.post = post
+            comment.author = request.user
+            comment.save()
+            messages.success(request, 'Комментарий добавлен!')
+            return redirect('post_detail', post_id=post.id)
+    else:
+        form = CommentForm()
+
+    context = {
+        'post': post,
+        'comments': comments,
+        'form': form,
+        'user_poll_votes': user_poll_votes,  # <--- Передаем в контекст
+    }
+
+    return render(request, 'core/post_detail.html', context)
+
+
+@login_required
+def create_post_view(request):
+    all_tags = Tag.objects.all()
+
+    if request.method == 'POST':
+        # Передаем обычный request.POST, форма сама поймет, что пришел список чекбоксов
+        form = PostForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+            post.save()
+            form.save_m2m()  # Сохраняем связи ManyToMany (теги)
+
+            if post.post_type == 'poll':
+                options = request.POST.getlist('poll_options')
+                for opt_text in options:
+                    if opt_text.strip():
+                        PollOption.objects.create(post=post, text=opt_text.strip())
+
+            messages.success(request, 'Пост успешно создан!')
+            return redirect('post_detail', post_id=post.id)
+    else:
+        form = PostForm()
+
+    return render(request, 'core/create_post.html', {
+        'form': form,
+        'all_tags': all_tags,
+    })
 
 
 def profile_view(request, username):
@@ -156,73 +226,7 @@ def edit_profile_view(request):
     return render(request, 'core/edit_profile.html', {'form': form})
 
 
-def post_detail_view(request, post_id):
-    post = get_object_or_404(Post, id=post_id)
-    comments = post.comments.all().order_by('created_at')
 
-    # Добавляем информацию о голосах для поста
-    if request.user.is_authenticated:
-        post.user_vote = post.user_vote(request.user)
-    else:
-        post.user_vote = None
-
-    post.get_upvotes_count = post.get_upvotes_count()
-    post.get_downvotes_count = post.get_downvotes_count()
-
-    for comment in comments:
-        comment.can_edit = comment.can_edit(request.user) if request.user.is_authenticated else False
-
-    # Обработка добавления комментария
-    if request.method == 'POST' and request.user.is_authenticated:
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.post = post
-            comment.author = request.user
-            comment.save()
-            messages.success(request, 'Комментарий добавлен!')
-            return redirect('post_detail', post_id=post.id)
-    else:
-        form = CommentForm()
-
-    context = {
-        'post': post,
-        'comments': comments,
-        'form': form,
-    }
-
-    return render(request, 'core/post_detail.html', context)
-
-
-@login_required
-def create_post_view(request):
-    all_tags = Tag.objects.all()
-
-    if request.method == 'POST':
-        # Преобразуем строку с ID тегов в список
-        if 'tags' in request.POST and request.POST['tags']:
-            tag_ids = request.POST['tags'].split(',')
-            # Создаем копию POST данных с правильным форматом
-            post_data = request.POST.copy()
-            post_data.setlist('tags', tag_ids)
-            form = PostForm(post_data, request.FILES)
-        else:
-            form = PostForm(request.POST, request.FILES)
-
-        if form.is_valid():
-            post = form.save(commit=False)
-            post.author = request.user
-            post.save()
-            form.save_m2m()
-            messages.success(request, 'Пост успешно создан!')
-            return redirect('post_detail', post_id=post.id)
-    else:
-        form = PostForm()
-
-    return render(request, 'core/create_post.html', {
-        'form': form,
-        'all_tags': all_tags,
-    })
 
 
 @login_required
@@ -260,4 +264,38 @@ def edit_comment_view(request, comment_id):
         'form': form,
         'comment': comment,
         'post': comment.post
+    })
+
+
+@login_required
+@require_POST
+def vote_poll_view(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    option_id = request.POST.get('option_id')
+    option = get_object_or_404(PollOption, id=option_id, post=post)
+
+    # Создаем или обновляем голос
+    vote, created = PollVote.objects.get_or_create(
+        user=request.user,
+        post=post,
+        defaults={'option': option}
+    )
+
+    if not created:
+        vote.option = option
+        vote.save()
+
+    # Собираем данные для фронтенда (ВАЖНО для JS)
+    options_data = [
+        {
+            'id': opt.id,
+            'percentage': opt.get_percentage()
+        } for opt in post.poll_options.all()
+    ]
+
+    # Возвращаем SUCCESS: TRUE
+    return JsonResponse({
+        'success': True,  # Этот ключ уберет ошибку в браузере
+        'total_votes': post.poll_votes.count(),
+        'options': options_data
     })
