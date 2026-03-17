@@ -7,6 +7,7 @@ class Profile(models.Model):
     bio = models.TextField(max_length=500, blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    profile_audio = models.FileField(upload_to='profile_audio/', null=True, blank=True)
 
     def __str__(self):
         return f'Профиль {self.user.username}'
