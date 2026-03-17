@@ -97,12 +97,10 @@
                         {% elif post.post_type == 'poll' %}
                             <div class="poll-widget mt-3 mb-3" id="poll-container-{{ post.id }}">
 
-                                {# Форма для группировки радиокнопок #}
                                 <form class="poll-vote-form">
                                     {% for option in post.poll_options.all %}
                                     <div class="poll-option-wrapper position-relative">
 
-                                        {# Скрытая радиокнопка. Важно: уникальный ID и общее ИМЯ для группы #}
                                         <input type="radio"
                                                name="poll_choice_{{ post.id }}"
                                                value="{{ option.id }}"
@@ -110,14 +108,10 @@
                                                class="poll-option-input"
                                                {% if option.id in user_poll_votes %}checked{% endif %}
                                                onchange="castPollVote({{ post.id }}, {{ option.id }})">
-
-                                        {# Стилизованный label, который выглядит как кнопка с кружком #}
                                         <label for="option_{{ option.id }}" class="poll-option-label">
 
-                                            {# Фоновый слой прогресс-бара #}
                                             <div class="poll-progress-bg" id="bar-{{ option.id }}" style="width: {{ option.get_percentage }}%;"></div>
 
-                                            {# Основной контент варианта #}
                                             <div class="poll-content small fw-bold text-dark">
                                                 <span>{{ option.text }}</span>
                                                 <span class="text-muted poll-perc" id="perc-{{ option.id }}">{{ option.get_percentage }}%</span>

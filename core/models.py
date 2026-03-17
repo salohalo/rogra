@@ -117,7 +117,6 @@ class PollOption(models.Model):
         all_votes = self.post.poll_votes.count()
         if all_votes == 0:
             return 0
-        # Математика в LaTeX: $$ \frac{votes}{total} \times 100 $$
         return int((self.total_votes / all_votes) * 100)
 
     def user_voted(self, user):

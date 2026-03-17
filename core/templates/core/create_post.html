@@ -89,7 +89,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (tagContainer) {
         tagContainer.addEventListener('click', function(e) {
             if (e.target.classList.contains('tag-label')) {
-                // Небольшая задержка, чтобы чекбокс успел сменить состояние
                 setTimeout(updateTagCounter, 10);
             }
         });
@@ -101,11 +100,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const selectedType = typeSelect.value;
 
-        // Скрываем всё по умолчанию
         if (imageField) imageField.style.display = 'none';
         if (pollWrapper) pollWrapper.style.display = 'none';
 
-        // Показываем нужное в зависимости от типа
         if (selectedType === 'image' && imageField) {
             imageField.style.display = 'block';
         } else if (selectedType === 'poll' && pollWrapper) {
@@ -132,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // === 5. Запуск при загрузке и подписка на изменения ===
     if (typeSelect) {
         typeSelect.addEventListener('change', toggleFields);
-        toggleFields(); // Первичная проверка
+        toggleFields();
     }
 
     updateTagCounter(); // Первичная инициализация счетчика тегов

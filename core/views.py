@@ -132,7 +132,6 @@ def post_detail_view(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     comments = post.comments.all().order_by('created_at')
 
-    # Собираем голос пользователя для конкретного опроса
     user_poll_votes = []
     if request.user.is_authenticated:
         post.user_vote = post.user_vote(request.user)
@@ -174,14 +173,13 @@ def create_post_view(request):
     all_tags = Tag.objects.all()
 
     if request.method == 'POST':
-        # Передаем обычный request.POST, форма сама поймет, что пришел список чекбоксов
         form = PostForm(request.POST, request.FILES)
 
         if form.is_valid():
             post = form.save(commit=False)
             post.author = request.user
             post.save()
-            form.save_m2m()  # Сохраняем связи ManyToMany (теги)
+            form.save_m2m()
 
             if post.post_type == 'poll':
                 options = request.POST.getlist('poll_options')
