@@ -69,55 +69,73 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 1. Ищем элементы по ID
+    // === 1. Инициализация элементов ===
     const typeSelect = document.querySelector('#id_post_type');
-    const imageWrapper = document.getElementById('image-field-wrapper');
+    const imageField = document.querySelector('#id_image')?.closest('.mb-3') || document.getElementById('image-field-wrapper');
     const pollWrapper = document.getElementById('poll-options-wrapper');
     const inputsList = document.getElementById('poll-inputs-list');
     const addBtn = document.getElementById('add-option-btn');
 
-    // Проверка наличия элементов (для отладки)
-    if (!pollWrapper) {
-        console.error("ОШИБКА: Блок 'poll-options-wrapper' не найден в HTML!");
-        return;
+    const tagContainer = document.getElementById('tags-container');
+    const tagCounter = document.getElementById('tag-counter');
+
+    // === 2. Логика тегов ===
+    function updateTagCounter() {
+        if (!tagCounter) return;
+        const checkedCount = document.querySelectorAll('.tag-checkbox:checked').length;
+        tagCounter.textContent = checkedCount;
     }
 
-    // 2. Функция управления видимостью
+    if (tagContainer) {
+        tagContainer.addEventListener('click', function(e) {
+            if (e.target.classList.contains('tag-label')) {
+                // Небольшая задержка, чтобы чекбокс успел сменить состояние
+                setTimeout(updateTagCounter, 10);
+            }
+        });
+    }
+
+    // === 3. Управление видимостью полей (Изображение / Опрос) ===
     function toggleFields() {
+        if (!typeSelect) return;
+
         const selectedType = typeSelect.value;
-        console.log("Текущий тип:", selectedType);
 
-        // Скрываем всё
-        imageWrapper.style.display = 'none';
-        pollWrapper.style.display = 'none';
+        // Скрываем всё по умолчанию
+        if (imageField) imageField.style.display = 'none';
+        if (pollWrapper) pollWrapper.style.display = 'none';
 
-        // Показываем нужное
-        if (selectedType === 'image') {
-            imageWrapper.style.display = 'block';
-        } else if (selectedType === 'poll') {
+        // Показываем нужное в зависимости от типа
+        if (selectedType === 'image' && imageField) {
+            imageField.style.display = 'block';
+        } else if (selectedType === 'poll' && pollWrapper) {
             pollWrapper.style.display = 'block';
         }
     }
 
-    // 3. Слушатель изменений
-    typeSelect.addEventListener('change', toggleFields);
-    
-    // Запускаем проверку сразу при загрузке
-    toggleFields();
+    // === 4. Логика динамических полей опроса ===
+    if (addBtn && inputsList) {
+        addBtn.addEventListener('click', function() {
+            const count = inputsList.querySelectorAll('input').length + 1;
+            if (count > 10) return alert("Максимум 10 вариантов");
 
-    // 4. Логика кнопки добавления вариантов
-    addBtn.addEventListener('click', function() {
-        const count = inputsList.querySelectorAll('input').length + 1;
-        if (count > 10) return alert("Максимум 10 вариантов");
+            const div = document.createElement('div');
+            div.className = 'input-group mb-2';
+            div.innerHTML = `
+                <input type="text" name="poll_options" class="form-control" placeholder="Вариант ${count}">
+                <button class="btn btn-outline-danger" type="button" onclick="this.parentElement.remove()">×</button>
+            `;
+            inputsList.appendChild(div);
+        });
+    }
 
-        const div = document.createElement('div');
-        div.className = 'input-group mb-2';
-        div.innerHTML = `
-            <input type="text" name="poll_options" class="form-control" placeholder="Вариант ${count}">
-            <button class="btn btn-outline-danger" type="button" onclick="this.parentElement.remove()">×</button>
-        `;
-        inputsList.appendChild(div);
-    });
+    // === 5. Запуск при загрузке и подписка на изменения ===
+    if (typeSelect) {
+        typeSelect.addEventListener('change', toggleFields);
+        toggleFields(); // Первичная проверка
+    }
+
+    updateTagCounter(); // Первичная инициализация счетчика тегов
 });
 </script>
 {% endblock %}
