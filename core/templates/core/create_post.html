@@ -45,18 +45,27 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label fw-bold">Теги</label>
-                        <div id="tags-container" class="border rounded p-2 bg-light">
+                        <label class="form-label mb-3">
+                            <i class="bi bi-tags"></i> Выберите теги:
+                        </label>
+
+                        <div class="d-flex flex-wrap gap-2 p-3 border rounded bg-light" id="tags-container">
                             {% for tag in all_tags %}
-                                <div class="tag-select-item" style="display: inline-block;">
-                                    <input type="checkbox" name="tags" value="{{ tag.id }}" id="tag_{{ tag.id }}" class="btn-check">
-                                    <label class="btn btn-outline-{{ tag.color }} btn-sm m-1" for="tag_{{ tag.id }}">
+                                <div class="form-check d-inline-block m-0">
+                                    <input type="checkbox"
+                                           name="tags"
+                                           value="{{ tag.id }}"
+                                           id="tag_{{ tag.id }}"
+                                           class="form-check-input tag-checkbox d-none"
+                                           {% if tag.id in form.tags.value %}checked{% endif %}>
+                                    <label for="tag_{{ tag.id }}"
+                                           class="badge bg-{{ tag.color }} p-2 m-0 tag-label"
+                                           style="cursor: pointer; transition: all 0.2s;">
                                         {{ tag.name }}
                                     </label>
                                 </div>
                             {% endfor %}
                         </div>
-                    </div>
 
                     <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Опубликовать пост</button>
                 </form>
