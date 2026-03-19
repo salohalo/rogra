@@ -66,7 +66,6 @@
         background-color: #f8f9fa;
     }
 
-    /* Стилизация псевдо-кружка (индикатора) */
     .poll-vote-form .poll-option-label::before {
         content: "";
         display: inline-block;
@@ -80,7 +79,6 @@
         background-color: #fff;
     }
 
-    /* Скрываем стандартную радиокнопку input */
     .poll-vote-form .poll-option-input {
         position: absolute;
         opacity: 0;
@@ -95,7 +93,6 @@
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     }
 
-    /* Изменение кружка для выбранного варианта */
     .poll-vote-form .poll-option-input:checked + .poll-option-label::before {
         border-color: #0d6efd;
         background-color: #0d6efd;
@@ -104,7 +101,7 @@
         background-repeat: no-repeat;
     }
 
-    /* Стили для отображения прогресса голосования (внутри label) */
+
     .poll-option-label .poll-progress-bg {
         position: absolute;
         top: 0;
@@ -161,6 +158,13 @@
     #id_tags {
         display: none;
     }
+
+    /* Цвета для тегов */
+    .bg-blue { background-color: #0d6efd !important; }
+    .bg-green { background-color: #198754 !important; }
+    .bg-orange { background-color: #fd7e14 !important; }
+    .bg-purple { background-color: #6f42c1 !important; }
+    .bg-red { background-color: #dc3545 !important; }
 </style>
 
     <!-- Кастомные стили -->
@@ -424,7 +428,7 @@
             formData.append('option_id', optionId);
             formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
-            fetch(`/post/${postId}/poll-vote/`, { // Убедитесь, что этот URL совпадает с вашим в urls.py
+            fetch(`/post/${postId}/poll-vote/`, {
                 method: 'POST',
                 body: formData,
                 headers: {
@@ -462,9 +466,7 @@
             });
         }, 5000);
 
-        // Функция для голосования через AJAX
         function votePost(postId, voteType) {
-            // Получаем CSRF токен из cookies
             function getCookie(name) {
                 let cookieValue = null;
                 if (document.cookie && document.cookie !== '') {
